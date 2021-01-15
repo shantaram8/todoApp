@@ -1,6 +1,5 @@
 package com.example.todosecond
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -29,11 +28,10 @@ class ToDoItemRecyclerAdapter(
 
 
         holder.isDone.setOnClickListener {
-            rowListener.modifyItemsState(objectId, !done)
-            Log.d("CheckBox Was clicked", "ClickClickBoom")
+            rowListener.modifyItemsState(objectId, !done, position)
         }
         holder.ibDeleteObject.setOnClickListener {
-            rowListener.onItemDelete(objectId)
+            rowListener.onItemDelete(objectId, position)
         }
     }
 

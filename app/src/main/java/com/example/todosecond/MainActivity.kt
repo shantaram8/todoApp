@@ -4,10 +4,9 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.EditText
-import android.widget.ListView
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.marginBottom
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todosecond.R.id
@@ -22,27 +21,22 @@ class MainActivity : AppCompatActivity(), ItemRowListener {
     var toDoItemList: MutableList<ToDoItem>? = null
     lateinit var recyclerView: RecyclerView
 
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(layout.activity_main)
 
-        recyclerView = findViewById(R.id.items_recycler_view)
+        recyclerView = findViewById(id.items_recycler_view)
         val fab = findViewById<View>(id.fab)
         fab.setOnClickListener {
             addNewItemDialog()
         }
         mDatabase = FirebaseDatabase.getInstance().reference
         toDoItemList = mutableListOf()
+        recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerAdapter = ToDoItemRecyclerAdapter(toDoItemList!!, this)
         recyclerView.adapter = recyclerAdapter
 
-        recyclerView.layoutManager = LinearLayoutManager(this)
-
-
         mDatabase.orderByKey().addListenerForSingleValueEvent(itemListener)
-
 
 
     }
@@ -53,29 +47,29 @@ class MainActivity : AppCompatActivity(), ItemRowListener {
         val itemEditText = EditText(this)
         alert.setMessage("Add new item")
         alert.setTitle("Enter ToDo Item Text")
-
         alert.setView(itemEditText)
 
         alert.setPositiveButton("Submit") { dialog, positiveButton ->
-            val toDoItem = ToDoItem.create()
-            toDoItem.itemText = itemEditText.text.toString()
-            toDoItem.done = false
+            if (itemEditText.text.isNotBlank()) {
+                val toDoItem = ToDoItem.create()
+                toDoItem.itemText = itemEditText.text.toString()
+                toDoItem.done = false
 
-            val newItem = mDatabase.child(Constants.FIREBASE_ITEM).push()
-            toDoItem.objectId = newItem.key
+                val newItem = mDatabase.child(Constants.FIREBASE_ITEM).push()
+                recyclerAdapter.notifyDataSetChanged()
+                toDoItem.objectId = newItem.key
 
-            newItem.setValue(toDoItem)
+                newItem.setValue(toDoItem)
 
-            dialog.dismiss()
-            Toast.makeText(this, "Item saved with ID ${toDoItem.objectId}", Toast.LENGTH_SHORT).show()
-
+                dialog.dismiss()
+                recreate()
+            }
         }
 
         alert.show()
     }
 
-
-    var itemListener: ValueEventListener = object : ValueEventListener {
+    private var itemListener: ValueEventListener = object : ValueEventListener {
 
         override fun onDataChange(snapshot: DataSnapshot) {
             addDataToList(snapshot)
@@ -90,11 +84,11 @@ class MainActivity : AppCompatActivity(), ItemRowListener {
     private fun addDataToList(snapshot: DataSnapshot) {
         val items = snapshot.children.iterator()
 
-        if(items.hasNext()) {
+        if (items.hasNext()) {
             val toDoListIndex = items.next()
             val itemsIterator = toDoListIndex.children.iterator()
 
-            while(itemsIterator.hasNext()) {
+            while (itemsIterator.hasNext()) {
 
                 val currentItem = itemsIterator.next()
                 val todoItem = ToDoItem.create()
@@ -110,15 +104,17 @@ class MainActivity : AppCompatActivity(), ItemRowListener {
         }
     }
 
-    override fun modifyItemsState(itemObjectId: String, isDone: Boolean) {
+    override fun modifyItemsState(itemObjectId: String, isDone: Boolean, position: Int) {
         val itemReference = mDatabase.child(Constants.FIREBASE_ITEM).child(itemObjectId)
-        itemReference.child("done").setValue(isDone);
+        itemReference.child("done").setValue(isDone)
+
     }
 
-    override fun onItemDelete(itemObjectId: String) {
+    override fun onItemDelete(itemObjectId: String, position: Int) {
         val itemReference = mDatabase.child(Constants.FIREBASE_ITEM).child(itemObjectId)
         itemReference.removeValue()
-        recyclerAdapter.notifyDataSetChanged()
+        recyclerView.invalidate()
+        recreate()
     }
 
 }

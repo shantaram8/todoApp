@@ -23,6 +23,7 @@
         android:layout_margin="15dp"
         android:src="@android:drawable/ic_input_add"
         app:elevation="6dp"
-        app:pressedTranslationZ="12dp" />
+        app:pressedTranslationZ="12dp"
+        />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
